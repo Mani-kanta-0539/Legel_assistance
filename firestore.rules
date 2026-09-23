@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if the requesting user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the user is operating on their own record
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper function to check if payload is within acceptable size limits
+    function isValidAuditPayload() {
+      return request.resource.data.keys().hasAll(['documentTitle', 'overallRiskScore', 'createdAt'])
+        && request.resource.data.overallRiskScore is int
+        && request.resource.data.overallRiskScore >= 0
+        && request.resource.data.overallRiskScore <= 100
+        && request.resource.data.documentTitle is string
+        && request.resource.data.documentTitle.size() <= 200;
+    }
+
+    // User profile document rules
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) 
+        && request.resource.data.keys().hasAny(['email', 'displayName', 'createdAt']);
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['id', 'createdAt']);
+      allow delete: if isOwner(userId);
+
+      // Audits subcollection (User Contract Audit History)
+      match /audits/{auditId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidAuditPayload();
+        allow update: if isOwner(userId) && isValidAuditPayload();
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Public / unauthenticated read or write is strictly prohibited across all collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

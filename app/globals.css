@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-berry-accent: #fc6c26;
+    --color-vanilla-cloud: #fff8df;
+    --color-vanilla-subtle: #fffdf5;
+    --color-berry-dark: #1f040f;
+    --color-berry-deep: #2d0818;
+    --color-berry-rich: #480e28;
+    --color-berry-mid: #68173b;
+    --color-berry-text: #18030b;
+  }
+
+  body {
+    background-color: var(--color-vanilla-cloud);
+    color: var(--color-berry-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* 3D Animated Gradients and Mesh Backgrounds */
+@keyframes meshFloat {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -25px) scale(1.08);
+  }
+  66% {
+    transform: translate(-25px, 20px) scale(0.95);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 25px rgba(252, 108, 38, 0.45));
+  }
+  50% {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 45px rgba(252, 108, 38, 0.75));
+  }
+}
+
+.animate-mesh-float {
+  animation: meshFloat 12s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+/* 3D Glassmorphism Utilities */
+.glass-berry-card {
+  background: rgba(45, 8, 24, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(252, 108, 38, 0.25);
+}
+
+.glass-vanilla-card {
+  background: rgba(255, 253, 245, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(252, 108, 38, 0.2);
+}
+
+/* Custom Scrollbar in Berry/Vanilla */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fff8df;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e2b388;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fc6c26;
 }
