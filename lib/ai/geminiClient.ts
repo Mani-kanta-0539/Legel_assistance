@@ -39,15 +39,19 @@ interface GeminiApiResponse {
   candidates?: GeminiCandidate[];
 }
 
+/** Candidate model cascade — ordered by latency/capability preference */
 const CANDIDATE_GEMINI_MODELS = [
   "gemini-2.5-flash-lite",
   "gemini-flash-latest",
   "gemini-3.5-flash-lite",
   "gemini-3.7-flash",
-];
+] as const;
+
+/** Per-request timeout in milliseconds (30 s keeps well under maxDuration=60) */
+const REQUEST_TIMEOUT_MS = 30_000;
 
 /**
- * Robust JSON extractor that handles potential surrounding backticks or preamble text
+ * Robust JSON extractor that handles potential surrounding backticks or preamble text.
  */
 function extractAndParseJson<T>(rawText: string, schema: z.ZodType<T>): T {
   let cleaned = rawText.trim();
@@ -64,6 +68,23 @@ function extractAndParseJson<T>(rawText: string, schema: z.ZodType<T>): T {
 }
 
 /**
+ * Creates a fetch call with an AbortController timeout.
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
  * Analyzes a contract using either the Gemini API (if key provided) or mock engine.
  */
 export async function analyzeContractWithGemini(
@@ -71,7 +92,7 @@ export async function analyzeContractWithGemini(
   apiKey?: string,
   userIntent?: UserIntent
 ): Promise<AnalysisResponse<ContractAuditReport>> {
-  const activeKey = apiKey || process.env.GEMINI_API_KEY;
+  const activeKey = apiKey ?? process.env.GEMINI_API_KEY;
 
   if (!activeKey) {
     return {
@@ -88,7 +109,7 @@ export async function analyzeContractWithGemini(
   // Try candidate Gemini models in sequence
   for (const modelName of CANDIDATE_GEMINI_MODELS) {
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`,
         {
           method: "POST",
@@ -106,14 +127,18 @@ export async function analyzeContractWithGemini(
             generationConfig: {
               responseMimeType: "application/json",
               temperature: 0.1,
+              maxOutputTokens: 4096,
             },
           }),
-        }
+        },
+        REQUEST_TIMEOUT_MS
       );
 
       if (!response.ok) {
         const errText = await response.text();
-        console.warn(`Gemini model ${modelName} returned status ${response.status}: ${errText.slice(0, 120)}. Trying next candidate...`);
+        console.warn(
+          `Gemini model ${modelName} returned status ${response.status}: ${errText.slice(0, 120)}. Trying next candidate...`
+        );
         continue;
       }
 
@@ -121,7 +146,7 @@ export async function analyzeContractWithGemini(
       const textPart =
         json?.candidates?.[0]?.content?.parts?.find(
           (p) => p.text && !p.thought
-        ) || json?.candidates?.[0]?.content?.parts?.[0];
+        ) ?? json?.candidates?.[0]?.content?.parts?.[0];
 
       const candidateText = textPart?.text;
 
@@ -143,7 +168,10 @@ export async function analyzeContractWithGemini(
       };
     } catch (modelError: unknown) {
       const msg = modelError instanceof Error ? modelError.message : String(modelError);
-      console.warn(`Model ${modelName} error: ${msg}. Trying next candidate...`);
+      const isTimeout = modelError instanceof Error && modelError.name === "AbortError";
+      console.warn(
+        `Model ${modelName} ${isTimeout ? "timed out" : `error: ${msg}`}. Trying next candidate...`
+      );
     }
   }
 
@@ -151,7 +179,8 @@ export async function analyzeContractWithGemini(
   return {
     data: runMockAudit(contractText, userIntent),
     source: "MOCK_FALLBACK",
-    warning: "All Gemini model candidates encountered upstream rate limits or temporary unavailability. Switched to deterministic legal engine.",
+    warning:
+      "All Gemini model candidates encountered upstream rate limits or temporary unavailability. Switched to deterministic legal engine.",
   };
 }
 
@@ -165,7 +194,7 @@ export async function compareContractsWithGemini(
   docBText: string,
   apiKey?: string
 ): Promise<AnalysisResponse<ContractComparisonReport>> {
-  const activeKey = apiKey || process.env.GEMINI_API_KEY;
+  const activeKey = apiKey ?? process.env.GEMINI_API_KEY;
 
   if (!activeKey) {
     return {
@@ -177,16 +206,11 @@ export async function compareContractsWithGemini(
   }
 
   const startTime = Date.now();
-  const userPrompt = buildCompareUserPrompt(
-    docAName,
-    docAText,
-    docBName,
-    docBText
-  );
+  const userPrompt = buildCompareUserPrompt(docAName, docAText, docBName, docBText);
 
   for (const modelName of CANDIDATE_GEMINI_MODELS) {
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`,
         {
           method: "POST",
@@ -204,9 +228,11 @@ export async function compareContractsWithGemini(
             generationConfig: {
               responseMimeType: "application/json",
               temperature: 0.1,
+              maxOutputTokens: 4096,
             },
           }),
-        }
+        },
+        REQUEST_TIMEOUT_MS
       );
 
       if (!response.ok) {
@@ -217,7 +243,7 @@ export async function compareContractsWithGemini(
       const textPart =
         json?.candidates?.[0]?.content?.parts?.find(
           (p) => p.text && !p.thought
-        ) || json?.candidates?.[0]?.content?.parts?.[0];
+        ) ?? json?.candidates?.[0]?.content?.parts?.[0];
 
       const candidateText = textPart?.text;
 
@@ -245,6 +271,7 @@ export async function compareContractsWithGemini(
   return {
     data: runMockCompare(docAName, docAText, docBName, docBText),
     source: "MOCK_FALLBACK",
-    warning: "All Gemini comparison candidates failed. Switched to comparison fallback engine.",
+    warning:
+      "All Gemini comparison candidates failed. Switched to comparison fallback engine.",
   };
 }

@@ -33,6 +33,13 @@ export default function RootLayout({
       className={`${jakarta.variable} ${outfit.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#FFF8DF] text-[#18030B] font-sans selection:bg-[#FC6C26] selection:text-[#FFF8DF]">
+        {/* Skip navigation link for keyboard & screen reader users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[#FC6C26] focus:text-[#1F040F] focus:font-bold focus:text-sm focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
         <AuthProvider>
           {children}
         </AuthProvider>

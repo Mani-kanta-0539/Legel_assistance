@@ -50,15 +50,21 @@ export default function LoginPage() {
         await registerWithEmail(email, password);
       }
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Auth error:", err);
-      let msg = err.message || "Failed to authenticate. Please check your credentials.";
-      if (err.code === "auth/invalid-credential") {
-        msg = "Invalid email or password. You can also use 'Continue as Guest' below.";
-      } else if (err.code === "auth/email-already-in-use") {
-        msg = "This email is already registered. Please switch to Sign In.";
-      } else if (err.code === "auth/weak-password") {
-        msg = "Password should be at least 6 characters.";
+      const isFirebaseError = (e: unknown): e is { code: string; message: string } =>
+        typeof e === "object" && e !== null && "code" in e && "message" in e;
+      let msg = isFirebaseError(err)
+        ? err.message
+        : "Failed to authenticate. Please check your credentials.";
+      if (isFirebaseError(err)) {
+        if (err.code === "auth/invalid-credential") {
+          msg = "Invalid email or password. You can also use 'Continue as Guest' below.";
+        } else if (err.code === "auth/email-already-in-use") {
+          msg = "This email is already registered. Please switch to Sign In.";
+        } else if (err.code === "auth/weak-password") {
+          msg = "Password should be at least 6 characters.";
+        }
       }
       setError(msg);
     } finally {

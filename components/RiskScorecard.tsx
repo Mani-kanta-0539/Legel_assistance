@@ -150,17 +150,25 @@ export function RiskScorecard({ report, onOpenDossier }: RiskScorecardProps) {
 
           <div className="flex-1">
             <div className="flex justify-between items-center text-xs font-bold text-[#2D0818] mb-1.5">
-              <span>Overall Risk Index</span>
+              <span id="risk-score-label">Overall Risk Index</span>
               <span className={theme.textColor}>{risk_tier}</span>
             </div>
-            <div className="w-full bg-[#E5D7B7] rounded-full h-3 overflow-hidden p-0.5">
+            <div
+              role="progressbar"
+              aria-labelledby="risk-score-label"
+              aria-valuenow={overall_risk_score}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuetext={`${overall_risk_score} out of 100 — ${risk_tier} risk`}
+              className="w-full bg-[#E5D7B7] rounded-full h-3 overflow-hidden p-0.5"
+            >
               <div
                 className={`h-2 rounded-full transition-all duration-700 ${theme.barBg}`}
                 style={{ width: `${Math.min(100, Math.max(5, overall_risk_score))}%` }}
               />
             </div>
             <p className="text-[11px] text-[#2D0818]/70 mt-1.5 font-medium">
-              Calculated from unfair indemnities & asymmetric liabilities
+              Calculated from unfair indemnities &amp; asymmetric liabilities
             </p>
           </div>
         </div>
@@ -218,8 +226,10 @@ export function RiskScorecard({ report, onOpenDossier }: RiskScorecardProps) {
         <div className="flex flex-wrap items-center gap-2">
           {/* View Attorney Brief Modal */}
           <button
+            type="button"
             onClick={onOpenDossier}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#2D0818] hover:bg-[#3B0D24] text-[#FFF8DF] flex items-center gap-1.5 shadow-md transition-colors"
+            aria-label="Open attorney briefing dossier modal"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#2D0818] hover:bg-[#3B0D24] text-[#FFF8DF] flex items-center gap-1.5 shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-[#FC6C26]"
           >
             <Briefcase className="w-3.5 h-3.5 text-[#FC6C26]" />
             <span>Open Attorney Briefing Dossier</span>
@@ -227,8 +237,10 @@ export function RiskScorecard({ report, onOpenDossier }: RiskScorecardProps) {
 
           {/* Download PDF */}
           <button
+            type="button"
             onClick={handleDownloadPdf}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#FC6C26] hover:bg-[#ff7e3d] text-[#1F040F] flex items-center gap-1.5 shadow-md shadow-[#FC6C26]/20 transition-colors"
+            aria-label="Download attorney dossier as PDF"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#FC6C26] hover:bg-[#ff7e3d] text-[#1F040F] flex items-center gap-1.5 shadow-md shadow-[#FC6C26]/20 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2D0818]"
             title="Download Attorney Dossier as formatted PDF"
           >
             <Download className="w-3.5 h-3.5" />
@@ -237,8 +249,10 @@ export function RiskScorecard({ report, onOpenDossier }: RiskScorecardProps) {
 
           {/* Download Markdown */}
           <button
+            type="button"
             onClick={handleDownloadMarkdown}
-            className="px-3 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-[#2D0818] border border-[#FC6C26]/40 flex items-center gap-1.5 shadow-2xs transition-colors"
+            aria-label="Download full audit report as Markdown file"
+            className="px-3 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-[#2D0818] border border-[#FC6C26]/40 flex items-center gap-1.5 shadow-2xs transition-colors focus:outline-none focus:ring-2 focus:ring-[#FC6C26]"
             title="Download complete audit as Markdown"
           >
             <FileDown className="w-3.5 h-3.5 text-slate-500" />
@@ -247,8 +261,10 @@ export function RiskScorecard({ report, onOpenDossier }: RiskScorecardProps) {
 
           {/* Download JSON */}
           <button
+            type="button"
             onClick={handleDownloadJson}
-            className="px-2.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-[#2D0818] border border-[#FC6C26]/40 flex items-center gap-1 transition-colors"
+            aria-label="Download raw JSON audit report"
+            className="px-2.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-[#2D0818] border border-[#FC6C26]/40 flex items-center gap-1 transition-colors focus:outline-none focus:ring-2 focus:ring-[#FC6C26]"
             title="Download raw JSON report"
           >
             <Share2 className="w-3.5 h-3.5 text-slate-500" />

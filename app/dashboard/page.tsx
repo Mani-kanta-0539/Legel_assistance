@@ -92,7 +92,7 @@ export default function DashboardPage() {
         report: auditReport,
       };
       // Keep most recent 25 audits
-      const updated = [newEntry, ...list.filter((item: any) => item.report.document_title !== auditReport.document_title)].slice(0, 25);
+      const updated = [newEntry, ...list.filter((item: { report: { document_title: string } }) => item.report.document_title !== auditReport.document_title)].slice(0, 25);
       localStorage.setItem("clauseguard_audit_history", JSON.stringify(updated));
     } catch (e) {
       console.warn("Failed to save audit history:", e);
@@ -134,8 +134,9 @@ export default function DashboardPage() {
       if (json.sanitizerWarnings && json.sanitizerWarnings.length > 0) {
         setSanitizerWarnings(json.sanitizerWarnings);
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || "An unexpected error occurred during analysis.");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "An unexpected error occurred during analysis.";
+      setErrorMsg(errMsg);
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +192,7 @@ export default function DashboardPage() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Workspace Banner */}
         <div className="mb-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#1F040F] via-[#3B0D24] to-[#1F040F] text-[#FFF8DF] shadow-2xl relative overflow-hidden border border-[#FC6C26]/30">
           <div className="absolute top-0 right-0 w-80 h-80 bg-[#FC6C26]/20 rounded-full blur-[100px] pointer-events-none" />

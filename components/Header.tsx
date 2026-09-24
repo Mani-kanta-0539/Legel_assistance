@@ -71,8 +71,14 @@ export function Header({
 
           {/* Center Tabs: Audit vs Compare (Only if setActiveTab is passed, i.e., in dashboard) */}
           {setActiveTab && (
-            <div className="flex items-center bg-[#2D0818] p-1 rounded-xl border border-[#FC6C26]/30">
+            <div
+              role="tablist"
+              aria-label="Main application view"
+              className="flex items-center bg-[#2D0818] p-1 rounded-xl border border-[#FC6C26]/30"
+            >
               <button
+                role="tab"
+                aria-selected={activeTab === "audit"}
                 onClick={() => setActiveTab("audit")}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   activeTab === "audit"
@@ -84,6 +90,8 @@ export function Header({
                 <span>Contract Audit</span>
               </button>
               <button
+                role="tab"
+                aria-selected={activeTab === "compare"}
                 onClick={() => setActiveTab("compare")}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   activeTab === "compare"

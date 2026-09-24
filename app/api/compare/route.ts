@@ -2,16 +2,38 @@ import { NextRequest, NextResponse } from "next/server";
 import { CompareRequestSchema } from "@/lib/ai/schemas";
 import { screenLlmInput, screenLlmOutput } from "@/lib/security/llmFirewall";
 import { compareContractsWithGemini } from "@/lib/ai/geminiClient";
+import { checkRateLimit } from "@/lib/utils/rateLimiter";
+
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  // Rate limiting — identify by IP
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+  const rateCheck = checkRateLimit(`compare:${ip}`);
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please wait before retrying." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(rateCheck.resetInMs / 1000)),
+          "X-RateLimit-Remaining": "0",
+        },
+      }
+    );
+  }
+
   try {
     const rawBody = await req.json().catch(() => null);
 
     const parseResult = CompareRequestSchema.safeParse(rawBody);
     if (!parseResult.success) {
-      const issueMessage = parseResult.error.issues[0]?.message || "Invalid comparison request format.";
+      const issueMessage =
+        parseResult.error.issues[0]?.message ?? "Invalid comparison request format.";
       return NextResponse.json({ error: issueMessage }, { status: 400 });
     }
 
@@ -24,7 +46,8 @@ export async function POST(req: NextRequest) {
     if (!scanA.allowed || scanA.actionTaken === "BLOCKED") {
       return NextResponse.json(
         {
-          error: "Security Firewall Alert: Document A contains critical adversarial injection directives and was blocked.",
+          error:
+            "Security Firewall Alert: Document A contains critical adversarial injection directives and was blocked.",
           threats: scanA.detectedThreats,
           blocked: true,
         },
@@ -35,7 +58,8 @@ export async function POST(req: NextRequest) {
     if (!scanB.allowed || scanB.actionTaken === "BLOCKED") {
       return NextResponse.json(
         {
-          error: "Security Firewall Alert: Document B contains critical adversarial injection directives and was blocked.",
+          error:
+            "Security Firewall Alert: Document B contains critical adversarial injection directives and was blocked.",
           threats: scanB.detectedThreats,
           blocked: true,
         },
@@ -44,9 +68,9 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await compareContractsWithGemini(
-      docAName || "Document A",
+      docAName ?? "Document A",
       scanA.sanitizedContent,
-      docBName || "Document B",
+      docBName ?? "Document B",
       scanB.sanitizedContent,
       apiKey
     );
@@ -58,20 +82,30 @@ export async function POST(req: NextRequest) {
       ? result.data
       : JSON.parse(outputScan.sanitizedOutput);
 
-    return NextResponse.json({
-      success: true,
-      report: safeData,
-      source: result.source,
-      model_used: result.model_used,
-      latency_ms: result.latency_ms,
-      warning: result.warning,
-      firewall: {
-        threatsFound: [...scanA.detectedThreats, ...scanB.detectedThreats],
-        outputCleaned: !outputScan.safe,
+    return NextResponse.json(
+      {
+        success: true,
+        report: safeData,
+        source: result.source,
+        model_used: result.model_used,
+        latency_ms: result.latency_ms,
+        warning: result.warning,
+        firewall: {
+          threatsFound: [...scanA.detectedThreats, ...scanB.detectedThreats],
+          outputCleaned: !outputScan.safe,
+        },
       },
-    });
-  } catch (error: any) {
-    console.error("API /api/compare error:", error?.message || error);
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "X-Content-Type-Options": "nosniff",
+          "X-RateLimit-Remaining": String(rateCheck.remaining),
+        },
+      }
+    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("API /api/compare error:", message);
     return NextResponse.json(
       { error: "Internal processing error during contract version comparison." },
       { status: 500 }
