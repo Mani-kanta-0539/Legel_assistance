@@ -174,10 +174,13 @@ export function RiskScorecard({ report, onOpenDossier }: RiskScorecardProps) {
         </div>
 
         {/* Breakdown Counts */}
-        <div className="lg:col-span-3 grid grid-cols-3 gap-3">
+        <div className="lg:col-span-3 grid grid-cols-3 gap-3" role="group" aria-label="Risk clause breakdown">
           {/* Red Flag Count */}
-          <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-center">
-            <div className="text-2xl font-black text-red-700">
+          <div
+            className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-center"
+            aria-label={`${summary_stats.red_flags} predatory or critical risk clauses found`}
+          >
+            <div className="text-2xl font-black text-red-700" aria-hidden="true">
               {summary_stats.red_flags}
             </div>
             <div className="text-xs font-bold text-red-900 mt-0.5">
@@ -189,8 +192,11 @@ export function RiskScorecard({ report, onOpenDossier }: RiskScorecardProps) {
           </div>
 
           {/* Amber Flag Count */}
-          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-center">
-            <div className="text-2xl font-black text-amber-700">
+          <div
+            className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-center"
+            aria-label={`${summary_stats.amber_flags} unbalanced clauses that need redlining`}
+          >
+            <div className="text-2xl font-black text-amber-700" aria-hidden="true">
               {summary_stats.amber_flags}
             </div>
             <div className="text-xs font-bold text-amber-900 mt-0.5">
@@ -202,8 +208,11 @@ export function RiskScorecard({ report, onOpenDossier }: RiskScorecardProps) {
           </div>
 
           {/* Green Flag Count */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
-            <div className="text-2xl font-black text-emerald-700">
+          <div
+            className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center"
+            aria-label={`${summary_stats.green_flags} standard or fair clauses`}
+          >
+            <div className="text-2xl font-black text-emerald-700" aria-hidden="true">
               {summary_stats.green_flags}
             </div>
             <div className="text-xs font-bold text-emerald-900 mt-0.5">

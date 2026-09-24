@@ -146,7 +146,7 @@ export function LegalChatbot({
         <section
           role="dialog"
           aria-label="ClauseGuard AI Legal Assistant Chat"
-          aria-modal="false"
+          aria-modal="true"
           className="fixed bottom-6 right-6 z-50 w-[92vw] sm:w-[410px] h-[550px] max-h-[85vh] bg-[#FFFDF5] rounded-3xl shadow-2xl border border-[#FC6C26]/30 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200"
         >
           {/* Chat Window Header */}
@@ -234,11 +234,16 @@ export function LegalChatbot({
           </div>
 
           {/* Quick Prompt Chips */}
-          <div className="px-3 py-2 bg-[#FFF8DF] border-t border-[#FC6C26]/15 flex items-center gap-1.5 overflow-x-auto scrollbar-thin">
+          <div
+            className="px-3 py-2 bg-[#FFF8DF] border-t border-[#FC6C26]/15 flex items-center gap-1.5 overflow-x-auto scrollbar-thin"
+            role="group"
+            aria-label="Quick question shortcuts"
+          >
             {QUICK_PROMPTS.map((prompt, idx) => (
               <button
                 key={idx}
                 type="button"
+                aria-label={`Quick question: ${prompt}`}
                 onClick={() => sendMessage(prompt)}
                 className="px-2.5 py-1 rounded-lg bg-white hover:bg-[#FFE8B6] border border-[#FC6C26]/25 text-[10px] font-bold text-[#2D0818] whitespace-nowrap transition-colors shrink-0 shadow-2xs focus:outline-none focus:ring-1 focus:ring-[#FC6C26]"
               >

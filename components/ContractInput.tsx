@@ -183,6 +183,7 @@ export function ContractInput({
               <button
                 key={preset.id}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => handleSelectPreset(preset.id)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
                   isSelected
@@ -215,7 +216,11 @@ export function ContractInput({
       {/* Contract Textarea Body */}
       <div className="p-4 sm:p-5">
         <div className="relative">
+          <label htmlFor="contract-text-input" className="sr-only">
+            Contract text input area — paste your contract, agreement or statement of work
+          </label>
           <textarea
+            id="contract-text-input"
             value={contractText}
             onChange={(e) => {
               setContractText(e.target.value);
@@ -259,16 +264,18 @@ export function ContractInput({
             type="button"
             onClick={onRequestAudit}
             disabled={isLoading || !contractText.trim()}
-            className="w-full sm:w-auto px-8 py-3 rounded-2xl font-black text-xs sm:text-sm text-[#1F040F] bg-[#FC6C26] hover:bg-[#ff7e3d] disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed shadow-lg shadow-[#FC6C26]/30 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+            aria-busy={isLoading}
+            aria-label={isLoading ? "Auditing contract, please wait…" : "Audit this contract for legal risks"}
+            className="w-full sm:w-auto px-8 py-3 rounded-2xl font-black text-xs sm:text-sm text-[#1F040F] bg-[#FC6C26] hover:bg-[#ff7e3d] disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed shadow-lg shadow-[#FC6C26]/30 flex items-center justify-center gap-2 transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-[#2D0818]"
           >
             {isLoading ? (
               <>
-                <div className="w-4 h-4 border-2 border-[#1F040F]/40 border-t-[#1F040F] rounded-full animate-spin" />
-                <span>Auditing Clauses & Legal Traps...</span>
+                <div className="w-4 h-4 border-2 border-[#1F040F]/40 border-t-[#1F040F] rounded-full animate-spin" aria-hidden="true" />
+                <span>Auditing Clauses &amp; Legal Traps...</span>
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-4 h-4" aria-hidden="true" />
                 <span>Audit Contract For Risks</span>
               </>
             )}

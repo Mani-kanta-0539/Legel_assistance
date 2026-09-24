@@ -16,30 +16,45 @@ import {
 } from "@/lib/ai/prompts";
 import { runMockAudit, runMockCompare } from "@/lib/ai/mockEngine";
 
+/**
+ * Unified response envelope returned by all Gemini client functions.
+ * Always indicates whether the result came from a live model or the mock fallback engine.
+ */
 export interface AnalysisResponse<T> {
+  /** The parsed, schema-validated result payload. */
   data: T;
+  /** Indicates whether the data was produced by a live Gemini model or the mock fallback. */
   source: "GEMINI_LIVE" | "MOCK_FALLBACK";
+  /** Optional human-readable warning (e.g., truncation notice). */
   warning?: string;
+  /** Name of the Gemini model that successfully responded. */
   model_used?: string;
+  /** Total round-trip latency in milliseconds. */
   latency_ms?: number;
 }
 
+/** Raw part shape returned by the Gemini REST API candidates array. */
 interface GeminiPart {
   text?: string;
   thought?: boolean;
 }
 
+/** Single candidate entry in a Gemini API response. */
 interface GeminiCandidate {
   content?: {
     parts?: GeminiPart[];
   };
 }
 
+/** Top-level shape of a Gemini generateContent API response. */
 interface GeminiApiResponse {
   candidates?: GeminiCandidate[];
 }
 
-/** Candidate model cascade — ordered by latency/capability preference */
+/**
+ * Ordered list of Gemini model IDs to attempt.
+ * Falls back to the next model on 4xx/5xx or timeout.
+ */
 const CANDIDATE_GEMINI_MODELS = [
   "gemini-2.5-flash-lite",
   "gemini-flash-latest",
@@ -47,7 +62,7 @@ const CANDIDATE_GEMINI_MODELS = [
   "gemini-3.7-flash",
 ] as const;
 
-/** Per-request timeout in milliseconds (30 s keeps well under maxDuration=60) */
+/** Maximum milliseconds to wait for a single Gemini model HTTP call (30 s < maxDuration 60 s). */
 const REQUEST_TIMEOUT_MS = 30_000;
 
 /**
@@ -85,7 +100,16 @@ async function fetchWithTimeout(
 }
 
 /**
- * Analyzes a contract using either the Gemini API (if key provided) or mock engine.
+ * Analyzes a contract document for legal risk using the Gemini API.
+ *
+ * Attempts each model in {@link CANDIDATE_GEMINI_MODELS} in order, applying an
+ * AbortController timeout per attempt. Falls back to the deterministic mock
+ * engine if no API key is present or all models fail.
+ *
+ * @param contractText - Raw contract text to analyze (up to 75 000 characters).
+ * @param apiKey       - Optional Gemini API key; falls back to `GEMINI_API_KEY` env var.
+ * @param userIntent   - Optional persona/focus directive for custom analysis.
+ * @returns A promise resolving to a validated {@link ContractAuditReport} envelope.
  */
 export async function analyzeContractWithGemini(
   contractText: string,
@@ -185,7 +209,18 @@ export async function analyzeContractWithGemini(
 }
 
 /**
- * Compares two contract versions using Gemini or fallback.
+ * Compares two contract drafts (Doc A vs Doc B) to identify legal risk drift.
+ *
+ * Performs a clause-by-clause diff using the Gemini API, classifying each change as
+ * ADDED, REMOVED, MODIFIED, or UNCHANGED, and evaluating whether the risk shift is
+ * ESCALATED, DE_ESCALATED, or NEUTRAL. Falls back to the mock engine on failure.
+ *
+ * @param docAName - Display name for the first (baseline) document.
+ * @param docAText - Full text of the first document.
+ * @param docBName - Display name for the second (revised) document.
+ * @param docBText - Full text of the second document.
+ * @param apiKey   - Optional Gemini API key; falls back to `GEMINI_API_KEY` env var.
+ * @returns A promise resolving to a validated {@link ContractComparisonReport} envelope.
  */
 export async function compareContractsWithGemini(
   docAName: string,

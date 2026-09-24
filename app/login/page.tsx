@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { isFirebaseError } from "@/lib/utils/typeGuards";
 import {
   Shield,
   Sparkles,
@@ -52,8 +53,6 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (err: unknown) {
       console.error("Auth error:", err);
-      const isFirebaseError = (e: unknown): e is { code: string; message: string } =>
-        typeof e === "object" && e !== null && "code" in e && "message" in e;
       let msg = isFirebaseError(err)
         ? err.message
         : "Failed to authenticate. Please check your credentials.";
